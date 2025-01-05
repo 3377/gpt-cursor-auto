@@ -3,8 +3,6 @@ from DrissionPage.common import Keys
 import re
 import time
 import random
-from cursor_auth_manager import CursorAuthManager
-
 
 def get_veri_code(tab):
     """获取验证码"""
@@ -89,6 +87,16 @@ def handle_turnstile(tab):
         print('跳过验证')
         return False
 
+def get_cursor_session_token(tab):
+    """获取cursor session token"""
+    cookies = tab.cookies()
+    cursor_session_token = None
+    for cookie in cookies:
+        if cookie['name'] == 'WorkosCursorSessionToken':
+            cursor_session_token = cookie['value'].split('%3A%3A')[1]
+            break
+    return cursor_session_token
+
 def delete_account(browser, tab):
     """删除账户流程"""
     print("\n开始删除账户...")
@@ -158,8 +166,6 @@ def delete_account(browser, tab):
 
     handle_turnstile(tab)
     time.sleep(random.uniform(1,3))
-    # tab.get_screenshot('sign-in_success.png')
-    # print("登录账户截图")
     
     tab.get(settings_url)
     print("进入设置页面")
@@ -194,31 +200,10 @@ def delete_account(browser, tab):
             print("点击Delete")
             delete_button.click()
             time.sleep(5)
-            # tab.get_screenshot('delete_account.png')
-            # print("删除账户截图")
             return True
     except Exception as e:  
         print(f"点击Delete失败: {str(e)}")
         return False
-
-
-def get_cursor_session_token(tab):
-    """获取cursor session token"""
-    cookies = tab.cookies()
-    cursor_session_token = None
-    for cookie in cookies:
-        if cookie['name'] == 'WorkosCursorSessionToken':
-            cursor_session_token = cookie['value'].split('%3A%3A')[1]
-            break
-    return cursor_session_token
-
-
-def update_cursor_auth(email=None, access_token=None, refresh_token=None):
-    """
-    更新Cursor的认证信息的便捷函数
-    """
-    auth_manager = CursorAuthManager()
-    return auth_manager.update_auth(email, access_token, refresh_token)
 
 def sign_up_account(browser, tab):
     """注册账户流程"""
@@ -298,17 +283,8 @@ def sign_up_account(browser, tab):
     time.sleep(random.uniform(1,3))
     print("进入设置页面")
     tab.get(settings_url)
-    try:
-        usage_ele = tab.ele('xpath:/html/body/main/div/div/div/div/div/div[2]/div/div/div/div[1]/div[1]/span[2]')
-        if usage_ele:
-            usage_info = usage_ele.text
-            total_usage = usage_info.split('/')[-1].strip()
-            print("可用上限: " + total_usage)
-    except Exception as e:
-        print("获取可用上限失败")
-    # tab.get_screenshot("sign_up_success.png")
-    # print("注册账户截图")
-    print("注册完成")
+
+    print("\n注册完成")
     print("Cursor 账号： " + account)
     print("       密码： " + password)
     return True
@@ -320,13 +296,10 @@ if __name__ == "__main__":
     settings_url = 'https://www.cursor.com/settings'
     mail_url = 'https://tempmail.plus'
  
-    account = 'drfy@mailto.plus'
+    account = 'drfyapi@mailto.plus'
     password = 'GDjk@20241123'
     first_name = 'feng'
     last_name = 'yun'
-
-    auto_update_cursor_auth = True
-
 
     # 浏览器配置
     co = ChromiumOptions()
@@ -336,16 +309,12 @@ if __name__ == "__main__":
     co.set_pref('credentials_enable_service', False)
     co.set_argument('--hide-crash-restore-bubble') 
     co.auto_port()
-    # co.set_argument('--no-sandbox')        # 无沙盒模式     用于linux
-    # co.set_argument('--headless=new')      #无界面系统启动参数   用于linux
-    # co.set_proxy('127.0.0.1:10809')        #设置代理
 
     browser = Chromium(co)
     tab = browser.latest_tab
     tab.run_js("try { turnstile.reset() } catch(e) { }")
     
     print("开始执行删除和注册流程")
-    print("***请确认已经用https://tempmail.plus/zh邮箱成功申请过cursor账号！***")
     tab.get(login_url)
     
     # 执行删除和注册流程
@@ -356,12 +325,10 @@ if __name__ == "__main__":
             token = get_cursor_session_token(tab)
             print(f"CursorSessionToken: {token}")
             print("账户注册成功")
-            if auto_update_cursor_auth:
-                update_cursor_auth(email=account, access_token=token, refresh_token=token)
         else:
             print("账户注册失败")
     else:
         print("账户删除失败")
 
     print("脚本执行完毕")
-    browser.quit()    
+    browser.quit() 
