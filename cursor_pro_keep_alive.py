@@ -12,7 +12,12 @@ def get_veri_code(tab):
     try:
         while True: 
             if tab.ele('@id=pre_button'):
-                tab.actions.click('@id=pre_button').type(Keys.CTRL_A).key_down(Keys.BACKSPACE).key_up(Keys.BACKSPACE).input(username).key_down(Keys.ENTER).key_up(Keys.ENTER)
+                # tab.actions.click('@id=pre_button').type(Keys.CTRL_A).key_down(Keys.BACKSPACE).key_up(Keys.BACKSPACE).input(username).key_down(Keys.ENTER).key_up(Keys.ENTER)
+                tab.actions.click('@id=pre_button')
+                time.sleep(0.5)
+                tab.ele('@id=pre_button').clear()
+                time.sleep(0.5)
+                tab.actions.input(username).key_down(Keys.ENTER).key_up(Keys.ENTER)
                 break
             time.sleep(1)
 
