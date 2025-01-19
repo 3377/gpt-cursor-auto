@@ -1,0 +1,13 @@
+[microsoft]
+client_id = your_client_id
+
+[tokens]
+refresh_token = 
+access_token = 
+expires_at =
+
+[account]
+email = your_alias@outlook.com
+password = your_password
+first_name = your_first_name
+last_name = your_last_name
