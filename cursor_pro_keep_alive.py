@@ -1,59 +1,37 @@
 from DrissionPage import ChromiumOptions, Chromium
 from DrissionPage.common import Keys
-import re
 import time
 import random
 from cursor_auth_manager import CursorAuthManager
+from mail_api import EmailClient
+import configparser
 
 
-def get_veri_code(tab):
+def get_veri_code():
     """获取验证码"""
-    username = account.split('@')[0]
     try:
-        while True: 
-            if tab.ele('@id=pre_button'):
-                # tab.actions.click('@id=pre_button').type(Keys.CTRL_A).key_down(Keys.BACKSPACE).key_up(Keys.BACKSPACE).input(username).key_down(Keys.ENTER).key_up(Keys.ENTER)
-                tab.actions.click('@id=pre_button')
-                time.sleep(0.5)
-                tab.ele('@id=pre_button').clear()
-                time.sleep(0.5)
-                tab.actions.input(username).key_down(Keys.ENTER).key_up(Keys.ENTER)
-                break
-            time.sleep(1)
-
-        while True:
-            new_mail = tab.ele('@class=mail')
-            if new_mail:
-                if new_mail.text:
-                    print('最新的邮件：', new_mail.text)
-                    tab.actions.click('@class=mail')
-                    break
-                else:
-                    print(new_mail)
-                    break
-            time.sleep(1)
-
-        if tab.ele('@class=overflow-auto mb-20'):
-            email_content = tab.ele('@class=overflow-auto mb-20').text
-            verification_code = re.search(r'verification code is (\d{6})', email_content)
-            if verification_code:
-                code = verification_code.group(1)
-                print('验证码：', code)
-            else:
-                print('未找到验证码')
-       
-        if tab.ele('@id=delete_mail'):
-            tab.actions.click('@id=delete_mail')
-            time.sleep(1)
-
-        if tab.ele('@id=confirm_mail'):
-            tab.actions.click('@id=confirm_mail')
-            print("删除邮件")
-        tab.close()
+        email_client = EmailClient()
+        
+        max_retries = 3
+        for attempt in range(max_retries):
+            codes = email_client.get_latest_verification_codes(top=1)
+            
+            if codes and len(codes) > 0:
+                code = codes[0]
+                print('获取到验证码：', code)
+                
+                email_client.delete_all_messages()
+                return code
+                
+            print(f"未找到验证码,重试 {attempt + 1}/{max_retries}")
+            time.sleep(5) 
+            
+        print('未能获取验证码')
+        return None
+        
     except Exception as e:
-        print(e)
-
-    return code
+        print(f"获取验证码时出错: {e}")
+        return None
 
 def handle_turnstile(tab):
     """处理 Turnstile 验证"""
@@ -78,13 +56,13 @@ def handle_turnstile(tab):
             except:
                 pass
 
-            if tab.ele('@name=password'):
+            if tab.ele('@name=password', timeout=2):
                 print("无需验证")   
                 break            
-            if tab.ele('@data-index=0'):
+            if tab.ele('@data-index=0', timeout=2):
                 print("无需验证")   
                 break
-            if tab.ele('Account Settings'):
+            if tab.ele('Account Settings', timeout=2):
                 print("无需验证")   
                 break       
 
@@ -134,16 +112,15 @@ def delete_account(browser, tab):
 
     handle_turnstile(tab)
 
-    # 处理验证码
     while True:
         try:
             if tab.ele('Account Settings'):
                 break
             if tab.ele('@data-index=0'):
-                tab_mail = browser.new_tab(mail_url)
-                browser.activate_tab(tab_mail)
+                # tab_mail = browser.new_tab(mail_url)
+                # browser.activate_tab(tab_mail)
                 print("打开邮箱页面")
-                code = get_veri_code(tab_mail)
+                code = get_veri_code()
 
                 if code:
                     print("获取验证码成功：", code)
@@ -163,8 +140,8 @@ def delete_account(browser, tab):
 
     handle_turnstile(tab)
     time.sleep(random.uniform(1,3))
-    # tab.get_screenshot('sign-in_success.png')
-    # print("登录账户截图")
+    tab.get_screenshot('sign-in_success.png')
+    print("登录账户截图")
     
     tab.get(settings_url)
     print("进入设置页面")
@@ -199,8 +176,8 @@ def delete_account(browser, tab):
             print("点击Delete")
             delete_button.click()
             time.sleep(5)
-            # tab.get_screenshot('delete_account.png')
-            # print("删除账户截图")
+            tab.get_screenshot('delete_account.png')
+            print("删除账户截图")
             return True
     except Exception as e:  
         print(f"点击Delete失败: {str(e)}")
@@ -277,10 +254,10 @@ def sign_up_account(browser, tab):
             if tab.ele('Account Settings'):
                 break
             if tab.ele('@data-index=0'):
-                tab_mail = browser.new_tab(mail_url)
-                browser.activate_tab(tab_mail)
-                print("打开邮箱页面")
-                code = get_veri_code(tab_mail)
+                # tab_mail = browser.new_tab(mail_url)
+                # browser.activate_tab(tab_mail)
+                print("准备获取验证码")
+                code = get_veri_code()
 
                 if code:
                     print("获取验证码成功：", code)
@@ -311,8 +288,8 @@ def sign_up_account(browser, tab):
             print("可用上限: " + total_usage)
     except Exception as e:
         print("获取可用上限失败")
-    # tab.get_screenshot("sign_up_success.png")
-    # print("注册账户截图")
+    tab.get_screenshot("sign_up_success.png")
+    print("注册账户截图")
     print("注册完成")
     print("Cursor 账号： " + account)
     print("       密码： " + password)
@@ -323,15 +300,15 @@ if __name__ == "__main__":
     login_url = 'https://authenticator.cursor.sh'
     sign_up_url = 'https://authenticator.cursor.sh/sign-up'
     settings_url = 'https://www.cursor.com/settings'
-    mail_url = 'https://tempmail.plus'
- 
-    account = 'your_account'                  #必须是 username@mailto.plus 邮箱
-    password = 'your_password'
-    first_name = 'your_firstname'
-    last_name = 'your_lastname'
+    
+    config = configparser.ConfigParser()
+    config.read('config.txt', encoding='utf-8')
+    account = config['account']['email']
+    password = config['account']['password']
+    first_name = config['account']['first_name']
+    last_name = config['account']['last_name']
 
     auto_update_cursor_auth = True
-
 
     # 浏览器配置
     co = ChromiumOptions()
@@ -350,7 +327,7 @@ if __name__ == "__main__":
     tab.run_js("try { turnstile.reset() } catch(e) { }")
     
     print("开始执行删除和注册流程")
-    print("***请确认已经用https://tempmail.plus/zh邮箱成功申请过cursor账号！***")
+    print("***请确认已经用指定的邮箱成功申请过cursor账号！***")
     tab.get(login_url)
     
     # 执行删除和注册流程
