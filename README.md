@@ -1,4 +1,7 @@
 # gpt-cursor-auto
+
+### 说明：发行版中的 Crazy Cursor 工具与本仓库代码无关，只是上传到这里方便下载！！！
+
 Python脚本 一键获取 ChatGpt 的 Access Token    -- gpt-accesstoken.py
 ***********************************************************************************************
 Python脚本 一键获取 Cursor Pro 自动保活        --  cursor_pro_keep_alive.py    
